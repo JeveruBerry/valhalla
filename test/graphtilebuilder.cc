@@ -187,7 +187,7 @@ TEST(GraphTileBuilder, TestAddBins) {
     // load a tile
     GraphId id(test_tile.second, 2, 0);
     std::string no_bin_dir = VALHALLA_SOURCE_DIR "test/data/bin_tiles/no_bin";
-    auto t = std::make_shared<GraphTile>(no_bin_dir, id);
+    boost::intrusive_ptr<GraphTile> t = new GraphTile(no_bin_dir, id);
     EXPECT_TRUE(t->header()) << "Couldn't load test tile";
 
     // alter the config to point to another dir
@@ -230,7 +230,7 @@ TEST(GraphTileBuilder, TestAddBins) {
     assert_tile_equalish(*t, GraphTile(bin_dir, id), increase, bins);
 
     // check that appending works
-    t = std::make_shared<GraphTile>(bin_dir, id);
+    t = new GraphTile(bin_dir, id);
     GraphTileBuilder::AddBins(bin_dir, t, bins);
     for (auto& bin : bins)
       bin.insert(bin.end(), bin.begin(), bin.end());
@@ -289,7 +289,7 @@ TEST(GraphTileBuilder, TestBinEdges) {
       "JiGlJqAfDbAtE~A~GgBdFyKlJy[xWqMvMqTlKoPfCeKiBkHeF}E{KoD{JaLsGwSeEg~BqR";
   auto decoded_shape = valhalla::midgard::decode<std::vector<PointLL>>(encoded_shape5);
   auto encoded_shape7 = valhalla::midgard::encode7(decoded_shape);
-  auto fake = std::static_pointer_cast<const GraphTile>(std::make_shared<fake_tile>(encoded_shape5));
+  boost::intrusive_ptr<const GraphTile> fake = new fake_tile(encoded_shape5);
   auto info = fake->edgeinfo(fake->directededge(0)->edgeinfo_offset());
   EXPECT_EQ(info.encoded_shape(), encoded_shape7);
   GraphTileBuilder::tweeners_t tweeners;

@@ -85,7 +85,7 @@ void graph_writer::write_tiles() {
 
     // write the bin data
     GraphTileBuilder::tweeners_t tweeners;
-    auto reloaded = std::make_shared<GraphTile>(test_tile_dir, tile_id);
+    boost::intrusive_ptr<GraphTile> reloaded = new GraphTile(test_tile_dir, tile_id);
     auto bins = GraphTileBuilder::BinEdges(reloaded, tweeners);
     GraphTileBuilder::AddBins(test_tile_dir, reloaded, bins);
 
@@ -106,7 +106,7 @@ void graph_writer::write_tiles() {
 
   for (const auto& entry : all_tweeners) {
     // re-open tiles to add tweeners back in.
-    auto tile = std::make_shared<vb::GraphTile>(test_tile_dir, entry.first);
+    boost::intrusive_ptr<const vb::GraphTile> tile = new vb::GraphTile(test_tile_dir, entry.first);
     vj::GraphTileBuilder::AddBins(test_tile_dir, tile, entry.second);
   }
 }

@@ -71,8 +71,8 @@ struct edge_t {
 // for the directed edge. This should not occur but this can happen in
 // GraphValidator if it fails to find an opposing edge.
 edge_t
-opposing(GraphReader& reader, std::shared_ptr<const GraphTile> tile, const DirectedEdge* edge) {
-  std::shared_ptr<const GraphTile> t =
+opposing(GraphReader& reader, boost::intrusive_ptr<const GraphTile> tile, const DirectedEdge* edge) {
+  boost::intrusive_ptr<const GraphTile> t =
       edge->leaves_tile() ? reader.GetGraphTile(edge->endnode()) : std::move(tile);
   auto id = edge->endnode();
   id.set_id(t->node(id)->edge_index() + edge->opp_index());
@@ -90,7 +90,7 @@ opposing(GraphReader& reader, std::shared_ptr<const GraphTile> tile, const Direc
 edge_t next(const std::unordered_map<GraphId, uint64_t>& tile_set,
             const bitset_t& edge_set,
             GraphReader& reader,
-            std::shared_ptr<const GraphTile>& tile,
+            boost::intrusive_ptr<const GraphTile>& tile,
             const edge_t& edge,
             const std::vector<std::string>& names) {
   // get the right tile
@@ -132,7 +132,7 @@ edge_t next(const std::unordered_map<GraphId, uint64_t>& tile_set,
 }
 
 void extend(GraphReader& reader,
-            std::shared_ptr<const GraphTile>& tile,
+            boost::intrusive_ptr<const GraphTile>& tile,
             const edge_t& edge,
             std::list<PointLL>& shape) {
   // get the shape

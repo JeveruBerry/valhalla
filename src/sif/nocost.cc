@@ -55,7 +55,7 @@ public:
    */
   virtual bool Allowed(const baldr::DirectedEdge* edge,
                        const EdgeLabel&,
-                       const std::shared_ptr<const GraphTile>&,
+                       const boost::intrusive_ptr<const GraphTile>&,
                        const baldr::GraphId&,
                        const uint64_t,
                        const uint32_t,
@@ -84,7 +84,7 @@ public:
   virtual bool AllowedReverse(const baldr::DirectedEdge*,
                               const EdgeLabel&,
                               const baldr::DirectedEdge* opp_edge,
-                              const std::shared_ptr<const GraphTile>&,
+                              const boost::intrusive_ptr<const GraphTile>&,
                               const baldr::GraphId&,
                               const uint64_t,
                               const uint32_t,
@@ -113,7 +113,7 @@ public:
   }
 
   bool IsClosed(const baldr::DirectedEdge*,
-                const std::shared_ptr<const baldr::GraphTile>&) const override {
+                const boost::intrusive_ptr<const baldr::GraphTile>&) const override {
     return false;
   }
 
@@ -139,7 +139,7 @@ public:
    * @return  Returns the cost and time (seconds)
    */
   virtual Cost EdgeCost(const baldr::DirectedEdge* edge,
-                        const std::shared_ptr<const baldr::GraphTile>&,
+                        const boost::intrusive_ptr<const baldr::GraphTile>&,
                         const uint32_t) const override {
     return {static_cast<float>(edge->length()), static_cast<float>(edge->length())};
   }
@@ -195,7 +195,7 @@ public:
    * edges not usable / inaccessible by automobile.
    */
   float Filter(const baldr::DirectedEdge* edge,
-               const std::shared_ptr<const baldr::GraphTile>&) const override {
+               const boost::intrusive_ptr<const baldr::GraphTile>&) const override {
     return !(edge->is_shortcut() || edge->IsTransitLine());
   }
 };

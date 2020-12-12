@@ -1,5 +1,4 @@
-#ifndef VALHALLA_BALDR_GRAPHTILE_H_
-#define VALHALLA_BALDR_GRAPHTILE_H_
+#pragma once
 
 #include <valhalla/baldr/accessrestriction.h>
 #include <valhalla/baldr/admininfo.h>
@@ -35,6 +34,9 @@
 #include <iterator>
 #include <memory>
 
+#include <boost/intrusive_ptr.hpp>
+#include <boost/smart_ptr/intrusive_ref_counter.hpp>
+
 namespace valhalla {
 namespace baldr {
 
@@ -45,7 +47,7 @@ class tile_getter_t;
 /**
  * Graph information for a tile within the Tiled Hierarchical Graph.
  */
-class GraphTile {
+class GraphTile : public boost::intrusive_ref_counter<GraphTile, boost::thread_unsafe_counter> {
 public:
   static const constexpr char* kTilePathPattern = "{tilePath}";
 
@@ -79,10 +81,10 @@ public:
    * @return whether or not the tile could be cached to disk
    */
 
-  static std::unique_ptr<GraphTile> CacheTileURL(const std::string& tile_url,
-                                                 const GraphId& graphid,
-                                                 tile_getter_t* tile_getter,
-                                                 const std::string& cache_location);
+  static boost::intrusive_ptr<const GraphTile> CacheTileURL(const std::string& tile_url,
+                                                            const GraphId& graphid,
+                                                            tile_getter_t* tile_getter,
+                                                            const std::string& cache_location);
 
   /**
    * Construct a tile given a url for the tile using curl
@@ -786,5 +788,3 @@ protected:
 
 } // namespace baldr
 } // namespace valhalla
-
-#endif // VALHALLA_BALDR_GRAPHTILE_H_

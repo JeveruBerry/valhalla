@@ -141,7 +141,7 @@ void UpdateIncident(const std::shared_ptr<const valhalla::IncidentsTile>& incide
  * @param incidents
  */
 void SetShapeAttributes(const AttributesController& controller,
-                        const std::shared_ptr<const GraphTile>& tile,
+                        const boost::intrusive_ptr<const GraphTile>& tile,
                         const DirectedEdge* edge,
                         std::vector<PointLL>& shape,
                         size_t shape_begin,
@@ -422,11 +422,11 @@ TripLeg_Edge* AddTripEdge(const AttributesController& controller,
                           const DirectedEdge* directededge,
                           const bool drive_on_right,
                           TripLeg_Node* trip_node,
-                          const std::shared_ptr<const GraphTile>& graphtile,
+                          const boost::intrusive_ptr<const GraphTile>& graphtile,
                           const uint32_t second_of_week,
                           const uint32_t start_node_idx,
                           const bool has_junction_name,
-                          const std::shared_ptr<const GraphTile>& start_tile,
+                          const boost::intrusive_ptr<const GraphTile>& start_tile,
                           const int restrictions_idx) {
 
   // Index of the directed edge within the tile
@@ -1119,7 +1119,7 @@ void TripLegBuilder::Build(
   uint64_t osmchangeset = 0;
   size_t edge_index = 0;
   const DirectedEdge* prev_de = nullptr;
-  std::shared_ptr<const GraphTile> graphtile = nullptr;
+  boost::intrusive_ptr<const GraphTile> graphtile = nullptr;
   TimeInfo time_info = forward_time_info;
   // remember that MultimodalBuilder keeps 'time_info' as reference,
   // so we should care about 'time_info' updates during iterations
@@ -1134,7 +1134,7 @@ void TripLegBuilder::Build(
     const auto& costing = mode_costing[static_cast<uint32_t>(mode)];
 
     // Set node attributes - only set if they are true since they are optional
-    std::shared_ptr<const GraphTile> start_tile = graphtile;
+    boost::intrusive_ptr<const GraphTile> start_tile = graphtile;
     start_tile = graphreader.GetGraphTile(startnode, start_tile);
     const NodeInfo* node = start_tile->node(startnode);
 
@@ -1349,7 +1349,7 @@ void TripLegBuilder::Build(
 
     // Save the opposing edge as the previous DirectedEdge (for name consistency)
     if (!directededge->IsTransitLine()) {
-      std::shared_ptr<const GraphTile> t2 =
+      boost::intrusive_ptr<const GraphTile> t2 =
           directededge->leaves_tile() ? graphreader.GetGraphTile(directededge->endnode()) : graphtile;
       if (t2 == nullptr) {
         continue;

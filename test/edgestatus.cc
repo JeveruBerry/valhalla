@@ -26,10 +26,10 @@ TEST(EdgeStatus, TestStatus) {
   // Dummy tile header
   GraphTileHeader header;
   header.set_directededgecount(200000);
-  auto tt = std::make_shared<test_tile>();
+  test_tile* tt = new test_tile;
   tt->header_ = &header;
 
-  auto tile = std::static_pointer_cast<const GraphTile>(tt);
+  boost::intrusive_ptr<const GraphTile> tile = tt;
 
   // Add some edges
   edgestatus.Set(GraphId(555, 1, 100100), EdgeSet::kPermanent, 1, tile);

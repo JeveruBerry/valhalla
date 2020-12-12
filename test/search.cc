@@ -158,7 +158,7 @@ void make_tile() {
 
   // write the bin data
   GraphTileBuilder::tweeners_t tweeners;
-  auto reloaded = std::make_shared<GraphTile>(tile_dir, tile_id);
+  boost::intrusive_ptr<GraphTile> reloaded = new GraphTile(tile_dir, tile_id);
   auto bins = GraphTileBuilder::BinEdges(reloaded, tweeners);
   GraphTileBuilder::AddBins(tile_dir, reloaded, bins);
 

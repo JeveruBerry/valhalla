@@ -43,7 +43,7 @@ void recost_forward(baldr::GraphReader& reader,
   }
 
   // fetch the graph objects
-  std::shared_ptr<const baldr::GraphTile> tile;
+  boost::intrusive_ptr<const baldr::GraphTile> tile;
   const baldr::DirectedEdge* edge = reader.directededge(edge_id, tile);
 
   // first edge is bogus

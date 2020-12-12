@@ -134,7 +134,7 @@ void SimpleTileCache::Clear() {
 }
 
 // Get a pointer to a graph tile object given a GraphId.
-std::shared_ptr<const baldr::GraphTile> SimpleTileCache::Get(const GraphId& graphid) const {
+boost::intrusive_ptr<const baldr::GraphTile> SimpleTileCache::Get(const GraphId& graphid) const {
   auto cached = cache_.find(graphid);
   if (cached != cache_.end()) {
     return cached->second;
@@ -143,9 +143,9 @@ std::shared_ptr<const baldr::GraphTile> SimpleTileCache::Get(const GraphId& grap
 }
 
 // Puts a copy of a tile of into the cache.
-std::shared_ptr<const baldr::GraphTile>
+boost::intrusive_ptr<const baldr::GraphTile>
 SimpleTileCache::Put(const GraphId& graphid,
-                     std::shared_ptr<const baldr::GraphTile> tile,
+                     boost::intrusive_ptr<const baldr::GraphTile> tile,
                      size_t size) {
   cache_size_ += size;
   return cache_.emplace(graphid, std::move(tile)).first->second;
@@ -161,7 +161,7 @@ void SimpleTileCache::Trim() {
 
 // Constructor.
 TileCacheLRU::TileCacheLRU(size_t max_size, MemoryLimitControl mem_control)
-    : cache_size_(0), max_cache_size_(max_size), mem_control_(mem_control) {
+    : mem_control_(mem_control), cache_size_(0), max_cache_size_(max_size) {
 }
 
 void TileCacheLRU::Reserve(size_t tile_size) {
@@ -189,7 +189,7 @@ void TileCacheLRU::Trim() {
   TrimToFit(0);
 }
 
-std::shared_ptr<const baldr::GraphTile> TileCacheLRU::Get(const GraphId& graphid) const {
+boost::intrusive_ptr<const baldr::GraphTile> TileCacheLRU::Get(const GraphId& graphid) const {
   auto cached = cache_.find(graphid);
   if (cached == cache_.cend()) {
     return nullptr;
@@ -219,9 +219,9 @@ void TileCacheLRU::MoveToLruHead(const KeyValueIter& entry_iter) const {
   key_val_lru_list_.splice(key_val_lru_list_.begin(), key_val_lru_list_, entry_iter);
 }
 
-std::shared_ptr<const baldr::GraphTile>
+boost::intrusive_ptr<const baldr::GraphTile>
 TileCacheLRU::Put(const GraphId& graphid,
-                  std::shared_ptr<const baldr::GraphTile> tile,
+                  boost::intrusive_ptr<const baldr::GraphTile> tile,
                   size_t new_tile_size) {
   if (new_tile_size > max_cache_size_) {
     throw std::runtime_error("TileCacheLRU: tile size is bigger than max cache size");
@@ -302,15 +302,16 @@ void SynchronizedTileCache::Trim() {
 }
 
 // Get a pointer to a graph tile object given a GraphId.
-std::shared_ptr<const baldr::GraphTile> SynchronizedTileCache::Get(const GraphId& graphid) const {
+boost::intrusive_ptr<const baldr::GraphTile>
+SynchronizedTileCache::Get(const GraphId& graphid) const {
   std::lock_guard<std::mutex> lock(mutex_ref_);
   return cache_.Get(graphid);
 }
 
 // Puts a copy of a tile of into the cache.
-std::shared_ptr<const baldr::GraphTile>
+boost::intrusive_ptr<const baldr::GraphTile>
 SynchronizedTileCache::Put(const GraphId& graphid,
-                           std::shared_ptr<const baldr::GraphTile> tile,
+                           boost::intrusive_ptr<const baldr::GraphTile> tile,
                            size_t size) {
   std::lock_guard<std::mutex> lock(mutex_ref_);
   return cache_.Put(graphid, std::move(tile), size);
@@ -414,7 +415,7 @@ bool GraphReader::DoesTileExist(const GraphId& graphid) const {
 
 // Get a pointer to a graph tile object given a GraphId. Return nullptr
 // if the tile is not found/empty
-std::shared_ptr<const baldr::GraphTile> GraphReader::GetGraphTile(const GraphId& graphid) {
+boost::intrusive_ptr<const baldr::GraphTile> GraphReader::GetGraphTile(const GraphId& graphid) {
   // TODO: clear the cache automatically once we become overcommitted by a certain amount
 
   // Return nullptr if not a valid tile
@@ -441,10 +442,10 @@ std::shared_ptr<const baldr::GraphTile> GraphReader::GetGraphTile(const GraphId&
     auto traffic_ptr = tile_extract_->traffic_tiles.find(base);
 
     // This initializes the tile from mmap
-    auto tile = std::make_shared<GraphTile>(base, t->second.first, t->second.second,
-                                            traffic_ptr != tile_extract_->traffic_tiles.end()
-                                                ? traffic_ptr->second.first
-                                                : nullptr);
+    boost::intrusive_ptr<const GraphTile> tile =
+        new GraphTile(base, t->second.first, t->second.second,
+                      traffic_ptr != tile_extract_->traffic_tiles.end() ? traffic_ptr->second.first
+                                                                        : nullptr);
     if (!tile->header()) {
       // LOG_DEBUG("Memory map cache miss " + GraphTile::FileSuffix(base));
       return nullptr;
@@ -458,10 +459,10 @@ std::shared_ptr<const baldr::GraphTile> GraphReader::GetGraphTile(const GraphId&
   else {
     auto traffic_ptr = tile_extract_->traffic_tiles.find(base);
     // Try to get it from disk and if we cant..
-    auto tile = std::make_shared<GraphTile>(tile_dir_, base,
-                                            traffic_ptr != tile_extract_->traffic_tiles.end()
-                                                ? traffic_ptr->second.first
-                                                : nullptr);
+    boost::intrusive_ptr<const GraphTile> tile =
+        new GraphTile(tile_dir_, base,
+                      traffic_ptr != tile_extract_->traffic_tiles.end() ? traffic_ptr->second.first
+                                                                        : nullptr);
     if (!tile->header()) {
       if (!tile_getter_) {
         return nullptr;
@@ -496,7 +497,7 @@ std::shared_ptr<const baldr::GraphTile> GraphReader::GetGraphTile(const GraphId&
 
 // Convenience method to get an opposing directed edge graph Id.
 GraphId GraphReader::GetOpposingEdgeId(const GraphId& edgeid,
-                                       std::shared_ptr<const baldr::GraphTile>& opp_tile) {
+                                       boost::intrusive_ptr<const baldr::GraphTile>& opp_tile) {
   // If you cant get the tile you get an invalid id
   auto tile = opp_tile;
   if (!GetGraphTile(edgeid, tile)) {
@@ -527,7 +528,7 @@ bool GraphReader::AreEdgesConnected(const GraphId& edge1, const GraphId& edge2) 
     if (n1.level() == n2.level()) {
       return false;
     } else {
-      std::shared_ptr<const baldr::GraphTile> tile = GetGraphTile(n1);
+      boost::intrusive_ptr<const baldr::GraphTile> tile = GetGraphTile(n1);
       if (!tile) {
         return false;
       }
@@ -545,8 +546,8 @@ bool GraphReader::AreEdgesConnected(const GraphId& edge1, const GraphId& edge2) 
   };
 
   // Get both directed edges
-  std::shared_ptr<const baldr::GraphTile> t1 = GetGraphTile(edge1);
-  std::shared_ptr<const baldr::GraphTile> t2 =
+  boost::intrusive_ptr<const baldr::GraphTile> t1 = GetGraphTile(edge1);
+  boost::intrusive_ptr<const baldr::GraphTile> t2 =
       (edge2.Tile_Base() == edge1.Tile_Base()) ? t1 : GetGraphTile(edge2);
 
   if (!t1 || !t2) {
@@ -578,7 +579,7 @@ bool GraphReader::AreEdgesConnected(const GraphId& edge1, const GraphId& edge2) 
 // end node of edge1 to the start node of edge2.
 bool GraphReader::AreEdgesConnectedForward(const GraphId& edge1,
                                            const GraphId& edge2,
-                                           std::shared_ptr<const baldr::GraphTile>& tile) {
+                                           boost::intrusive_ptr<const baldr::GraphTile>& tile) {
   // Get end node of edge1
   GraphId endnode = edge_endnode(edge1, tile);
   if (endnode.Tile_Base() != edge1.Tile_Base()) {
@@ -612,7 +613,7 @@ GraphId GraphReader::GetShortcut(const GraphId& id) {
   // Lambda to get continuing edge at a node. Skips the specified edge Id
   // transition edges, shortcut edges, and transit connections. Returns
   // nullptr if more than one edge remains or no continuing edge is found.
-  auto continuing_edge = [](const std::shared_ptr<const baldr::GraphTile>& tile,
+  auto continuing_edge = [](const boost::intrusive_ptr<const baldr::GraphTile>& tile,
                             const GraphId& edgeid, const NodeInfo* nodeinfo) {
     uint32_t idx = nodeinfo->edge_index();
     const DirectedEdge* continuing_edge = static_cast<const DirectedEdge*>(nullptr);
@@ -638,7 +639,7 @@ GraphId GraphReader::GetShortcut(const GraphId& id) {
   }
 
   // If this edge is a shortcut return this edge Id
-  std::shared_ptr<const baldr::GraphTile> tile = GetGraphTile(id);
+  boost::intrusive_ptr<const baldr::GraphTile> tile = GetGraphTile(id);
   const DirectedEdge* directededge = tile->directededge(id);
   if (directededge->is_shortcut()) {
     return id;
@@ -691,7 +692,7 @@ uint32_t GraphReader::GetEdgeDensity(const GraphId& edgeid) {
   const DirectedEdge* opp_edge = GetOpposingEdge(edgeid);
   if (opp_edge) {
     GraphId id = opp_edge->endnode();
-    std::shared_ptr<const baldr::GraphTile> tile = GetGraphTile(id);
+    boost::intrusive_ptr<const baldr::GraphTile> tile = GetGraphTile(id);
     return (tile != nullptr) ? tile->node(id)->density() : 0;
   } else {
     return 0;
@@ -700,11 +701,11 @@ uint32_t GraphReader::GetEdgeDensity(const GraphId& edgeid) {
 
 // Get the end nodes of a directed edge.
 std::pair<GraphId, GraphId>
-GraphReader::GetDirectedEdgeNodes(std::shared_ptr<const baldr::GraphTile> tile,
+GraphReader::GetDirectedEdgeNodes(boost::intrusive_ptr<const baldr::GraphTile> tile,
                                   const DirectedEdge* edge) {
   GraphId end_node = edge->endnode();
   GraphId start_node;
-  std::shared_ptr<const baldr::GraphTile> t2 =
+  boost::intrusive_ptr<const baldr::GraphTile> t2 =
       (edge->leaves_tile()) ? GetGraphTile(end_node) : std::move(tile);
   if (t2 != nullptr) {
     auto edge_idx = t2->node(end_node)->edge_index() + edge->opp_index();
@@ -828,7 +829,7 @@ AABB2<PointLL> GraphReader::GetMinimumBoundingBox(const AABB2<PointLL>& bb) {
 }
 
 int GraphReader::GetTimezone(const baldr::GraphId& node,
-                             std::shared_ptr<const baldr::GraphTile>& tile) {
+                             boost::intrusive_ptr<const baldr::GraphTile>& tile) {
   GetGraphTile(node, tile);
   return (tile == nullptr) ? 0 : tile->node(node)->timezone();
 }
@@ -840,7 +841,7 @@ GraphReader::GetIncidentTile(const GraphId& tile_id) const {
 }
 
 IncidentResult GraphReader::GetIncidents(const GraphId& edge_id,
-                                         std::shared_ptr<const baldr::GraphTile>& tile) {
+                                         boost::intrusive_ptr<const baldr::GraphTile>& tile) {
   // if we are not doing this for any reason then bail
   std::shared_ptr<const valhalla::IncidentsTile> itile;
   if (!enable_incidents_ || !GetGraphTile(edge_id, tile) ||

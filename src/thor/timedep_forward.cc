@@ -58,7 +58,7 @@ bool TimeDepForward::ExpandForward(GraphReader& graphreader,
                                    std::pair<int32_t, float>& best_path) {
   // Get the tile and the node info. Skip if tile is null (can happen
   // with regional data sets) or if no access at the node.
-  std::shared_ptr<const GraphTile> tile = graphreader.GetGraphTile(node);
+  boost::intrusive_ptr<const GraphTile> tile = graphreader.GetGraphTile(node);
   if (tile == nullptr) {
     return false;
   }
@@ -155,7 +155,7 @@ inline bool TimeDepForward::ExpandForwardInner(GraphReader& graphreader,
                                                const NodeInfo* nodeinfo,
                                                const uint32_t pred_idx,
                                                const EdgeMetadata& meta,
-                                               const std::shared_ptr<const GraphTile>& tile,
+                                               const boost::intrusive_ptr<const GraphTile>& tile,
                                                const TimeInfo& time_info,
                                                const valhalla::Location& destination,
                                                std::pair<int32_t, float>& best_path) {
@@ -227,7 +227,7 @@ inline bool TimeDepForward::ExpandForwardInner(GraphReader& graphreader,
   float dist = 0.0f;
   float sortcost = newcost.cost;
   if (dest_edge == destinations_percent_along_.end()) {
-    std::shared_ptr<const GraphTile> t2 =
+    boost::intrusive_ptr<const GraphTile> t2 =
         meta.edge->leaves_tile() ? graphreader.GetGraphTile(meta.edge->endnode()) : tile;
     if (t2 == nullptr) {
       return false;

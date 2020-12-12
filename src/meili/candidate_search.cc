@@ -36,7 +36,7 @@ CandidateCollector::WithinSquaredDistance(const midgard::PointLL& location,
   std::vector<baldr::PathLocation> candidates;
   std::unordered_set<baldr::GraphId> visited_nodes;
   midgard::projector_t projector(location);
-  std::shared_ptr<const baldr::GraphTile> tile;
+  boost::intrusive_ptr<const baldr::GraphTile> tile;
 
   for (auto it = edgeid_begin; it != edgeid_end; it++) {
     const auto& edgeid = *it;
@@ -130,7 +130,7 @@ CandidateCollector::WithinSquaredDistance(const midgard::PointLL& location,
 
 // Add each road linestring's line segments into grid. Only one side
 // of directed edges is added
-void IndexBin(const std::shared_ptr<const baldr::GraphTile>& tile,
+void IndexBin(const boost::intrusive_ptr<const baldr::GraphTile>& tile,
               const int32_t bin_index,
               baldr::GraphReader& reader,
               CandidateGridQuery::grid_t& grid) {

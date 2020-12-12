@@ -40,7 +40,7 @@ struct EdgePairs {
  * Test if 2 edges have matching attributes such that they should be
  * considered for combining into a shortcut edge.
  */
-bool EdgesMatch(const std::shared_ptr<const GraphTile>& tile,
+bool EdgesMatch(const boost::intrusive_ptr<const GraphTile>& tile,
                 const DirectedEdge* edge1,
                 const DirectedEdge* edge2) {
   // Check if edges end at same node.
@@ -101,7 +101,7 @@ GraphId GetOpposingEdge(const GraphId& node,
                         GraphReader& reader,
                         const uint64_t wayid) {
   // Get the tile at the end node
-  std::shared_ptr<const GraphTile> tile = reader.GetGraphTile(edge->endnode());
+  boost::intrusive_ptr<const GraphTile> tile = reader.GetGraphTile(edge->endnode());
   const NodeInfo* nodeinfo = tile->node(edge->endnode().id());
 
   // Get the directed edges and return when the end node matches
@@ -133,7 +133,8 @@ GraphId GetOpposingEdge(const GraphId& node,
  * @param  tile          Graph tile of the edge
  * @param  directededge  Directed edge to match.
  */
-bool OpposingEdgeInfoMatches(const std::shared_ptr<const GraphTile>& tile, const DirectedEdge* edge) {
+bool OpposingEdgeInfoMatches(const boost::intrusive_ptr<const GraphTile>& tile,
+                             const DirectedEdge* edge) {
   // Get the nodeinfo at the end of the edge. Iterate through the directed edges and return
   // true if a matching edgeinfo offset if found.
   const NodeInfo* nodeinfo = tile->node(edge->endnode().id());
@@ -149,7 +150,7 @@ bool OpposingEdgeInfoMatches(const std::shared_ptr<const GraphTile>& tile, const
 
 // Get the ISO country code at the end node
 std::string EndNodeIso(const DirectedEdge* edge, GraphReader& reader) {
-  std::shared_ptr<const GraphTile> tile = reader.GetGraphTile(edge->endnode());
+  boost::intrusive_ptr<const GraphTile> tile = reader.GetGraphTile(edge->endnode());
   const NodeInfo* nodeinfo = tile->node(edge->endnode().id());
   return tile->admininfo(nodeinfo->admin_index()).country_iso();
 }
@@ -165,7 +166,7 @@ std::string EndNodeIso(const DirectedEdge* edge, GraphReader& reader) {
  *          false if not.
  */
 bool CanContract(GraphReader& reader,
-                 const std::shared_ptr<const GraphTile>& tile,
+                 const boost::intrusive_ptr<const GraphTile>& tile,
                  const GraphId& node,
                  EdgePairs& edgepairs) {
   // Return false if only 1 edge
@@ -352,7 +353,7 @@ uint32_t ConnectEdges(GraphReader& reader,
 // Check if the edge is entering a contracted node
 bool IsEnteringEdgeOfContractedNode(GraphReader& reader, const GraphId& nodeid, const GraphId& edge) {
   EdgePairs edgepairs;
-  std::shared_ptr<const GraphTile> tile = reader.GetGraphTile(nodeid);
+  boost::intrusive_ptr<const GraphTile> tile = reader.GetGraphTile(nodeid);
   bool c = CanContract(reader, tile, nodeid, edgepairs);
   return c && (edgepairs.edge1.first == edge || edgepairs.edge2.first == edge);
 }
@@ -360,7 +361,7 @@ bool IsEnteringEdgeOfContractedNode(GraphReader& reader, const GraphId& nodeid, 
 // Add shortcut edges (if they should exist) from the specified node
 // TODO - need to add access restrictions?
 uint32_t AddShortcutEdges(GraphReader& reader,
-                          const std::shared_ptr<const GraphTile>& tile,
+                          const boost::intrusive_ptr<const GraphTile>& tile,
                           GraphTileBuilder& tilebuilder,
                           const GraphId& start_node,
                           const uint32_t edge_index,
@@ -374,9 +375,9 @@ uint32_t AddShortcutEdges(GraphReader& reader,
   }
 
   // Check if this is the last edge in a shortcut (if the endnode cannot be contracted).
-  auto last_edge = [&reader](std::shared_ptr<const GraphTile> tile, const GraphId& endnode,
+  auto last_edge = [&reader](boost::intrusive_ptr<const GraphTile> tile, const GraphId& endnode,
                              EdgePairs& edgepairs) {
-    return !CanContract(reader, tile, endnode, edgepairs);
+    return !CanContract(reader, std::move(tile), endnode, edgepairs);
   };
 
   // Iterate through directed edges of the base node
@@ -449,7 +450,7 @@ uint32_t AddShortcutEdges(GraphReader& reader,
       GraphId next_edge_id = edge_id;
       while (true) {
         EdgePairs edgepairs;
-        std::shared_ptr<const GraphTile> tile = reader.GetGraphTile(end_node);
+        boost::intrusive_ptr<const GraphTile> tile = reader.GetGraphTile(end_node);
         if (last_edge(tile, end_node, edgepairs)) {
           break;
         }
@@ -587,7 +588,7 @@ uint32_t FormShortcuts(GraphReader& reader, const TileLevel& level) {
   uint32_t shortcut_count = 0;
   uint32_t ntiles = level.tiles.TileCount();
   uint32_t tile_level = (uint32_t)level.level;
-  std::shared_ptr<const GraphTile> tile = nullptr;
+  boost::intrusive_ptr<const GraphTile> tile = nullptr;
   for (uint32_t tileid = 0; tileid < ntiles; tileid++) {
     // Get the graph tile. Skip if no tile exists (common case)
     tile = reader.GetGraphTile(GraphId(tileid, tile_level, 0));
